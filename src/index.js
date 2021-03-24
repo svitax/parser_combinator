@@ -1,18 +1,34 @@
-const str = s => targetString => {
-  if (targetString.startsWith(s)) {
-    // success
-    return s
-  }
-  throw new Error(`Tried to match ${s}, but got ${targetString.slice(0, 10)}...`)
+const str = s => parserState => {
+  const {
+    targetString,
+    index
+  } = parserState
 
+
+  if (targetString.slice(index).startsWith(s)) {
+    // success
+    return {
+      ...parserState,
+      result: s,
+      index: index + s.length
+    }
+  }
+  throw new Error(`Tried to match ${s}, but got ${targetString.slice(index, index+10)}...`)
 }
+
+// parser = ParserState in -> ParserState out
 
 const run = (parser, targetString) => {
-  return parser(targetString)
+  const initialState = {
+    targetString,
+    index: 0,
+    result: null
+  }
+  return parser(initialState)
 }
 
-const parser = str('hello there')
+const parser = str('hello there!')
 
 console.log(
-  run(parser, 'hello not correct there')
+  run(parser, 'hello there!')
 )
