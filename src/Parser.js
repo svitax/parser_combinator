@@ -288,6 +288,10 @@ const sepBy1 = seperatorParser => valueParser => new Parser(parseState => {
   return updateParserResult(nextState, results)
 })
 
+const lazy = parserThunk => new Parser(parserState => {
+  const parser = parserThunk()
+  return parser.parserStateTransformerFn(parserState)
+})
 
 module.exports = {
   Parser,
@@ -300,5 +304,6 @@ module.exports = {
   many1,
   between,
   sepBy,
-  sepBy1
+  sepBy1,
+  lazy
 }

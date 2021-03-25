@@ -9,7 +9,8 @@ const {
   many1,
   between,
   sepBy,
-  sepBy1
+  sepBy1,
+  lazy
 } = require('./Parser.js')
 
 // parser = ParserState in -> ParserState out
@@ -68,10 +69,15 @@ const chainParser = sequenceOf([letters, str(':')])
 
 const betweenSquareBrackets = between(str('['), str(']'))
 const commaSeparated = sepBy(str(','))
-const sepByParser = betweenSquareBrackets(commaSeparated(digits))
 
+const value = lazy(() => choice([
+  digits,
+  arrayParser
+]))
+
+const arrayParser = betweenSquareBrackets(commaSeparated(value))
 // const parser = str('hello').map(result => result.toUpperCase())
 
 console.log(
-  sepByParser.run('[211,2,3,4,6]')
+  arrayParser.run('[211,[2,[3]],4,6]')
 )
