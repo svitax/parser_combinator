@@ -16,6 +16,21 @@ const str = s => parserState => {
   throw new Error(`Tried to match ${s}, but got ${targetString.slice(index, index+10)}...`)
 }
 
+const sequenceOf = parsers => parserState => {
+  const results = []
+  let nextState = parserState
+
+  for (let p of parsers) {
+    nextState = p(nextState)
+    results.push(nextState.result)
+  }
+
+  return {
+    ...nextState,
+    result: results
+  }
+}
+
 // parser = ParserState in -> ParserState out
 
 const run = (parser, targetString) => {
@@ -27,8 +42,11 @@ const run = (parser, targetString) => {
   return parser(initialState)
 }
 
-const parser = str('hello there!')
+const parser = sequenceOf ([
+  str('hello there!'),
+  str('goodbye there!')
+])
 
 console.log(
-  run(parser, 'hello there!')
+  run(parser, 'hello there!goodbye there!')
 )
