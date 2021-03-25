@@ -10,7 +10,7 @@ const {
   between,
   sepBy,
   sepBy1,
-  lazy
+  recursive
 } = require('./Parser.js')
 
 // parser = ParserState in -> ParserState out
@@ -70,7 +70,7 @@ const chainParser = sequenceOf([letters, str(':')])
 const betweenSquareBrackets = between(str('['), str(']'))
 const commaSeparated = sepBy(str(','))
 
-const value = lazy(() => choice([
+const value = recursive(() => choice([
   digits,
   arrayParser
 ]))
