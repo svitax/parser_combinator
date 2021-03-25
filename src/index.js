@@ -1,11 +1,12 @@
 const {
   Parser,
   str,
+  letters,
+  digits,
   sequenceOf,
   choice,
   many,
-  letters,
-  digits
+  between,
 } = require('./Parser.js')
 
 // parser = ParserState in -> ParserState out
@@ -31,8 +32,11 @@ const manyChoiceParser = many(choice([
   letters
 ])).map(results => [...results].reverse())
 
+const betweenBrackets = between(str('('), str(')'))
+const betweenParser = betweenBrackets(letters)
+
 // const parser = str('hello').map(result => result.toUpperCase())
 
 console.log(
-  manyChoiceParser.run('50987234lakhadsg')
+  betweenParser.run('(loalkdhags)')
 )

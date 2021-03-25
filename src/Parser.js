@@ -51,6 +51,7 @@ class Parser {
     })
   }
 }
+
 const str = s => new Parser(parserState => {
   const {
     targetString,
@@ -75,21 +76,6 @@ const str = s => new Parser(parserState => {
     parserState,
     `Tried to match ${s}, but got ${targetString.slice(index, index+10)}`
   )
-})
-const sequenceOf = parsers => new Parser(parserState => {
-  if (parserState.isError) {
-    return parserState
-  }
-
-  const results = []
-  let nextState = parserState
-
-  for (let p of parsers) {
-    nextState = p.parserStateTransformerFn(nextState)
-    results.push(nextState.result)
-  }
-
-  return updateParserResult(nextState, results)
 })
 
 const lettersRegex = /^[A-Za-z]+/;
@@ -121,6 +107,7 @@ const letters = new Parser(parserState => {
     `letters: Couldn't match letters at index ${index}`
   )
 })
+
 const digitsRegex = /^[0-9]+/;
 const digits = new Parser(parserState => {
   const {
@@ -149,6 +136,22 @@ const digits = new Parser(parserState => {
     parserState,
     `digits: Couldn't match digits at index ${index}`
   )
+})
+
+const sequenceOf = parsers => new Parser(parserState => {
+  if (parserState.isError) {
+    return parserState
+  }
+
+  const results = []
+  let nextState = parserState
+
+  for (let p of parsers) {
+    nextState = p.parserStateTransformerFn(nextState)
+    results.push(nextState.result)
+  }
+
+  return updateParserResult(nextState, results)
 })
 
 const choice = parsers => new Parser(parserState => {
@@ -190,6 +193,7 @@ const many = parser => new Parser(parserState => {
 
   return updateParserResult(nextState,results)
 })
+
 const many1 = parser => new Parser(parserState => {
   if (parserState.isError) {
     return parserState
@@ -217,14 +221,21 @@ const many1 = parser => new Parser(parserState => {
   return updateParserResult(nextState,results)
 })
 
+const between = (leftParser, rightParser) => contentParser => sequenceOf([
+  leftParser,
+  contentParser,
+  rightParser
+]).map(results => results[1])
+
 
 module.exports = {
   Parser,
   str,
+  letters,
+  digits,
   sequenceOf,
   choice,
   many,
   many1,
-  letters,
-  digits,
+  between,
 }
