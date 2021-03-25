@@ -3,6 +3,7 @@ const {
   str,
   sequenceOf,
   choice,
+  many,
   letters,
   digits
 } = require('./Parser.js')
@@ -25,8 +26,13 @@ const choiceParser = choice([
   letters
 ])
 
+const manyChoiceParser = many(choice([
+  digits,
+  letters
+])).map(results => [...results].reverse())
+
 // const parser = str('hello').map(result => result.toUpperCase())
 
 console.log(
-  choiceParser.run('50987234lakhadsg')
+  manyChoiceParser.run('50987234lakhadsg')
 )

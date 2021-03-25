@@ -91,23 +91,7 @@ const sequenceOf = parsers => new Parser(parserState => {
 
   return updateParserResult(nextState, results)
 })
-const choice = parsers => new Parser(parserState => {
-  if (parserState.isError) {
-    return parserState
-  }
 
-  for (let p of parsers) {
-    const nextState = p.parserStateTransformerFn(parserState)
-    if (!nextState.isError) {
-      return nextState
-    }
-  }
-
-  return updateParserError(
-    nextState,
-    `choice: Unable to match with any parser at index ${parserState.index}`
-  )
-})
 const lettersRegex = /^[A-Za-z]+/;
 const letters = new Parser(parserState => {
   const {
@@ -167,6 +151,71 @@ const digits = new Parser(parserState => {
   )
 })
 
+const choice = parsers => new Parser(parserState => {
+  if (parserState.isError) {
+    return parserState
+  }
+
+  for (let p of parsers) {
+    const nextState = p.parserStateTransformerFn(parserState)
+    if (!nextState.isError) {
+      return nextState
+    }
+  }
+
+  return updateParserError(
+    parserState,
+    `choice: Unable to match with any parser at index ${parserState.index}`
+  )
+})
+
+const many = parser => new Parser(parserState => {
+  if (parserState.isError) {
+    return parserState
+  }
+
+  let nextState = parserState
+  const results = []
+  let done = false
+
+  while (!done) {
+    let testState = parser.parserStateTransformerFn(nextState)
+    if (!testState.isError) {
+      results.push(testState.result)
+      nextState = testState
+    } else {
+      done = true
+    }
+  }
+
+  return updateParserResult(nextState,results)
+})
+const many1 = parser => new Parser(parserState => {
+  if (parserState.isError) {
+    return parserState
+  }
+
+  let nextState = parserState
+  const results = []
+  let done = false
+
+  while (!done) {
+    const nextState = parser.parserStateTransformerFn(nextState)
+    if (!nextState.isError) {
+      results.push(nextState.result)
+    } else {
+      done = true
+    }
+  }
+  if (results.length === 0)  {
+    return updateParserError(
+      parserState,
+      `many1: unable to match any input using parser @ index ${parserState.index}`
+    )
+  }
+
+  return updateParserResult(nextState,results)
+})
 
 
 module.exports = {
@@ -174,6 +223,8 @@ module.exports = {
   str,
   sequenceOf,
   choice,
+  many,
+  many1,
   letters,
   digits,
 }
