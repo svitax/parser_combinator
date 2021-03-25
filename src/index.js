@@ -35,8 +35,36 @@ const manyChoiceParser = many(choice([
 const betweenBrackets = between(str('('), str(')'))
 const betweenParser = betweenBrackets(letters)
 
+const stringParser = letters.map(result => ({
+  type: 'string',
+  value: result
+}))
+const numberParser = digits.map(result => ({
+  type: 'number',
+  value: Number(result)
+}))
+const dicerollParser = sequenceOf([
+  digits,
+  str('d'),
+  digits
+]).map(([n, _, s]) => ({
+  type: 'diceroll',
+  value: [Number(n), Number(s)]
+}))
+
+const chainParser = sequenceOf([letters, str(':')])
+  .map(results => results[0])
+  .chain(type => {
+    if (type === 'string') {
+      return stringParser
+    } else if (type === 'number') {
+      return numberParser
+    }
+    return dicerollParser
+  })
+
 // const parser = str('hello').map(result => result.toUpperCase())
 
 console.log(
-  betweenParser.run('(loalkdhags)')
+  chainParser.run('diceroll:2d8')
 )

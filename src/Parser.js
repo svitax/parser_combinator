@@ -41,6 +41,19 @@ class Parser {
     })
   }
 
+  // letters.chain(result => {})
+  chain (fn) {
+    return new Parser(parserState => {
+      const nextState = this.parserStateTransformerFn(parserState)
+
+      if (nextState.isError) return nextState
+
+      const nextParser = fn(nextState.result)
+
+      return nextParser.parserStateTransformerFn(nextState)
+    })
+  }
+
   errorMap(fn) {
     return new Parser(parserState => {
       const nextState = this.parserStateTransformerFn(parserState)
