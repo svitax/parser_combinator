@@ -2,13 +2,13 @@ const {
   Parser,
   str,
   sequenceOf,
+  choice,
   letters,
   digits
 } = require('./Parser.js')
 
 // parser = ParserState in -> ParserState out
 
-// const parser = new Parser()
 const parser = str('hello').map(result => ({
   value: result.toUpperCase()
 }))
@@ -20,8 +20,13 @@ const digitsLettersDigitsParser = sequenceOf([
   digits
 ])
 
+const choiceParser = choice([
+  digits,
+  letters
+])
+
 // const parser = str('hello').map(result => result.toUpperCase())
 
 console.log(
-  digitsLettersDigitsParser.run('092735hello019735')
+  choiceParser.run('50987234lakhadsg')
 )

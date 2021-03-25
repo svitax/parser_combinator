@@ -91,7 +91,23 @@ const sequenceOf = parsers => new Parser(parserState => {
 
   return updateParserResult(nextState, results)
 })
+const choice = parsers => new Parser(parserState => {
+  if (parserState.isError) {
+    return parserState
+  }
 
+  for (let p of parsers) {
+    const nextState = p.parserStateTransformerFn(parserState)
+    if (!nextState.isError) {
+      return nextState
+    }
+  }
+
+  return updateParserError(
+    nextState,
+    `choice: Unable to match with any parser at index ${parserState.index}`
+  )
+})
 const lettersRegex = /^[A-Za-z]+/;
 const letters = new Parser(parserState => {
   const {
@@ -121,7 +137,6 @@ const letters = new Parser(parserState => {
     `letters: Couldn't match letters at index ${index}`
   )
 })
-
 const digitsRegex = /^[0-9]+/;
 const digits = new Parser(parserState => {
   const {
@@ -158,6 +173,7 @@ module.exports = {
   Parser,
   str,
   sequenceOf,
+  choice,
   letters,
-  digits
+  digits,
 }
