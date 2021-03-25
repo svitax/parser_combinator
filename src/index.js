@@ -1,22 +1,51 @@
+const updateParserState = (state, index, result) => ({
+  ...state,
+  index,
+  result
+})
+
+const updateParserError = (state, errorMsg) => ({
+  ...state,
+  isError: true,
+  error: errorMsg
+})
+
+const updateParserResult = (state, result) => ({
+  ...state,
+  result
+})
+
 const str = s => parserState => {
   const {
     targetString,
-    index
+    index,
+    isError
   } = parserState
 
-
-  if (targetString.slice(index).startsWith(s)) {
-    // success
-    return {
-      ...parserState,
-      result: s,
-      index: index + s.length
-    }
+  if (isError) {
+    return parserState
   }
-  throw new Error(`Tried to match ${s}, but got ${targetString.slice(index, index+10)}...`)
+
+  const slicedTarget = targetString.slice(index)
+
+  if (slicedTarget.length === 0) {
+    return updateParserError(parserState, `str: Tried to match "${s}, but got unexpected end of input`)
+  }
+
+  if (slicedTarget.startsWith(s)) {
+    return updateParserState(parserState, index+s.length, s)
+  }
+  return updateParserError(
+    parserState,
+    `Tried to match ${s}, but got ${targetString.slice(index, index+10)}`
+  )
 }
 
 const sequenceOf = parsers => parserState => {
+  if (parserState.isError) {
+    return parserState
+  }
+
   const results = []
   let nextState = parserState
 
@@ -25,10 +54,7 @@ const sequenceOf = parsers => parserState => {
     results.push(nextState.result)
   }
 
-  return {
-    ...nextState,
-    result: results
-  }
+  return updateParserResult(nextState, results)
 }
 
 // parser = ParserState in -> ParserState out
@@ -37,16 +63,18 @@ const run = (parser, targetString) => {
   const initialState = {
     targetString,
     index: 0,
-    result: null
+    result: null,
+    isError: false,
+    error: null
   }
   return parser(initialState)
 }
 
-const parser = sequenceOf ([
+const parser = sequenceOf([
   str('hello there!'),
   str('goodbye there!')
 ])
 
 console.log(
-  run(parser, 'hello there!goodbye there!')
+  run(parser, '')
 )
