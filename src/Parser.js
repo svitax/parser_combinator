@@ -240,6 +240,54 @@ const between = (leftParser, rightParser) => contentParser => sequenceOf([
   rightParser
 ]).map(results => results[1])
 
+const sepBy = seperatorParser => valueParser => new Parser(parseState => {
+  const results = []
+  let nextState = parseState
+
+  while (true) {
+    const thingWeWantState = valueParser.parserStateTransformerFn(nextState)
+    if (thingWeWantState.isError) {
+      break
+    }
+    results.push(thingWeWantState.result)
+    nextState = thingWeWantState
+
+    const seperatorState = seperatorParser.parserStateTransformerFn(nextState)
+    if (seperatorState.isError) {
+      break
+    }
+    nextState = seperatorState
+  }
+  return updateParserResult(nextState, results)
+})
+
+const sepBy1 = seperatorParser => valueParser => new Parser(parseState => {
+  const results = []
+  let nextState = parseState
+
+  while (true) {
+    const thingWeWantState = valueParser.parserStateTransformerFn(nextState)
+    if (thingWeWantState.isError) {
+      break
+    }
+    results.push(thingWeWantState.result)
+    nextState = thingWeWantState
+
+    const seperatorState = seperatorParser.parserStateTransformerFn(nextState)
+    if (seperatorState.isError) {
+      break
+    }
+    nextState = seperatorState
+  }
+  if (results.length === 0) {
+    return updateParserError(
+      parseState,
+      `sepBy1: Unable to capture any results at index ${parserState.index}`
+    )
+  }
+  return updateParserResult(nextState, results)
+})
+
 
 module.exports = {
   Parser,
@@ -251,4 +299,6 @@ module.exports = {
   many,
   many1,
   between,
+  sepBy,
+  sepBy1
 }

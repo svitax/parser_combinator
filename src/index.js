@@ -6,7 +6,10 @@ const {
   sequenceOf,
   choice,
   many,
+  many1,
   between,
+  sepBy,
+  sepBy1
 } = require('./Parser.js')
 
 // parser = ParserState in -> ParserState out
@@ -63,8 +66,12 @@ const chainParser = sequenceOf([letters, str(':')])
     return dicerollParser
   })
 
+const betweenSquareBrackets = between(str('['), str(']'))
+const commaSeparated = sepBy(str(','))
+const sepByParser = betweenSquareBrackets(commaSeparated(digits))
+
 // const parser = str('hello').map(result => result.toUpperCase())
 
 console.log(
-  chainParser.run('diceroll:2d8')
+  sepByParser.run('[211,2,3,4,6]')
 )
