@@ -90,6 +90,35 @@ const str = s => new Parser(parserState => {
     `Tried to match ${s}, but got ${targetString.slice(index, index+10)}`
   )
 })
+const atomRegex = /^[^\[\]]+/;
+const atom = new Parser(parserState => {
+  const {
+    targetString,
+    index,
+    isError
+  } = parserState
+
+  if (isError) {
+    return parserState
+  }
+
+  const slicedTarget = targetString.slice(index)
+
+  if (slicedTarget.length === 0) {
+    return updateParserError(parserState, `atom: got unexpected end of input.`)
+  }
+
+  const regexMatch = slicedTarget.match(atomRegex)
+
+  if (regexMatch) {
+    return updateParserState(parserState, index+regexMatch[0].length, regexMatch[0])
+  }
+
+  return updateParserError(
+    parserState,
+    `atom: Couldn't match atom at index ${index}`
+  )
+})
 
 const lettersRegex = /^[A-Za-z]+/;
 const letters = new Parser(parserState => {
@@ -307,22 +336,14 @@ const recursive = parserThunk => new Parser(parserState => {
 
 const betweenSquareBrackets = between(str('['), str(']'))
 
-const atomParser = letters.map(x => ({
+const atomParser = atom.map(x => ({
   type: 'atom',
-  value: x
-}))
-const digitsParser = digits.map(x => ({
-  type: 'digits',
   value: x
 }))
 
 const createTreeParser = grammar => {
   let parsers = {
     'atom': [atomParser],
-    'digits': [digitsParser]
-    // 'N': ['atom'],
-    // 'V': ['atom'],
-    // 'NP': [['N', 'V'], ['V', 'N']]
   }
   function createRule (rule) {
       // const productionParser = p.ParserRules.find(x => Object.keys(x) === rule.symbols)
