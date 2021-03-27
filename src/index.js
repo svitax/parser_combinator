@@ -10,7 +10,10 @@ const {
   between,
   sepBy,
   sepBy1,
-  recursive
+  recursive,
+  createTreeParser,
+  atomParser,
+  digitsParser
 } = require('./Parser.js')
 
 // parser = ParserState in -> ParserState out
@@ -78,6 +81,17 @@ const value = recursive(() => choice([
 const arrayParser = betweenSquareBrackets(commaSeparated(value))
 // const parser = str('hello').map(result => result.toUpperCase())
 
-console.log(
-  arrayParser.run('[211,[2,[3]],4,6]')
-)
+const grammar = {
+  ParserRules: [
+    // terminals should go first
+    // and working our way up
+    {name: 'N', symbols: [['atom', 'digits'], ['atom']]},
+    {name: 'V', symbols: [['atom']]},
+    {name: 'NP', symbols: [['N', 'V']]},
+  ],
+  ParserStart: 'NP'
+}
+
+const treeParser = createTreeParser(grammar)
+result = treeParser.run('[NP [N ahah][V b]]')
+console.log(JSON.stringify(result, null, ' '))

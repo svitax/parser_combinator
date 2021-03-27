@@ -164,6 +164,10 @@ const sequenceOf = parsers => new Parser(parserState => {
     results.push(nextState.result)
   }
 
+  if (nextState.isError) {
+    return nextState
+  }
+
   return updateParserResult(nextState, results)
 })
 
@@ -241,6 +245,10 @@ const between = (leftParser, rightParser) => contentParser => sequenceOf([
 ]).map(results => results[1])
 
 const sepBy = seperatorParser => valueParser => new Parser(parseState => {
+  if (parseState.isError) {
+    return parserState
+  }
+
   const results = []
   let nextState = parseState
 
@@ -262,6 +270,10 @@ const sepBy = seperatorParser => valueParser => new Parser(parseState => {
 })
 
 const sepBy1 = seperatorParser => valueParser => new Parser(parseState => {
+  if (parseState.isError) {
+    return parseState
+  }
+
   const results = []
   let nextState = parseState
 
@@ -293,6 +305,85 @@ const recursive = parserThunk => new Parser(parserState => {
   return parser.parserStateTransformerFn(parserState)
 })
 
+const betweenSquareBrackets = between(str('['), str(']'))
+
+const atomParser = letters.map(x => ({
+  type: 'atom',
+  value: x
+}))
+const digitsParser = digits.map(x => ({
+  type: 'digits',
+  value: x
+}))
+
+const createTreeParser = grammar => {
+  let parsers = {
+    'atom': [atomParser],
+    'digits': [digitsParser]
+    // 'N': ['atom'],
+    // 'V': ['atom'],
+    // 'NP': [['N', 'V'], ['V', 'N']]
+  }
+  function createRule (rule) {
+      // const productionParser = p.ParserRules.find(x => Object.keys(x) === rule.symbols)
+      // const productions = p.ParserRules.find(x => Object.keys(x)[0] === rule.symbols[0])
+      let choices = []
+      for (let s of rule.symbols) {
+        let a = queryParsers(s)
+        choices.push(sequenceOf(queryParsers(s)))
+      }
+
+      return betweenSquareBrackets(sequenceOf([
+        str(rule.name),
+        str(' '),
+        choice(choices),
+      ])).map(results => ({
+        type: rule.name,
+        value: results[2]
+      }))
+  }
+
+  function queryParsers (keys) {
+    let parsersList = []
+    for (let k of keys) {
+      parsersList.push(parsers[k])
+    }
+    return parsersList.flat()
+  }
+
+  function hasValidSymbols (rule) {
+    for (let sym of rule.symbols) {
+      for (let s of sym) {
+        if (!parsers[s]) {
+          return false
+        }
+      }
+      // if (!p.ParserRules.find(x => x[sym])) {
+        // return false
+      // }
+    }
+    return true
+  }
+
+  for (let r of grammar.ParserRules) {
+    // check that we have a parser for all the symbols in our rule r
+    // if (p.ParserRules.find(x => x[r.symbols]))
+    if (hasValidSymbols(r)) {
+      // p.ParserRules.push({[Object.keys(r)[0]]: createRule(r)})
+      // p.ParserRules.push({[r['name']]: createRule(r)})
+      parsers[r.name] = [createRule(r)]
+    }
+  }
+
+  // return parsers[grammar.ParserStart]
+  // const start = p.ParserRules.find(x => Object.keys(x)[0] === grammar.ParserStart)
+  // return start[Object.keys(start)[0]]
+
+  return parsers[grammar.ParserStart][0]
+}
+
+// todo: createGrammar function
+
 module.exports = {
   Parser,
   str,
@@ -305,5 +396,8 @@ module.exports = {
   between,
   sepBy,
   sepBy1,
-  recursive
+  recursive,
+  createTreeParser,
+  atomParser,
+  digitsParser
 }
