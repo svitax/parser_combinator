@@ -366,12 +366,10 @@ const recursive = parserThunk => new Parser(parserState => {
 })
 
 const betweenSquareBrackets = between(str('['), str(']'))
-
 const atomParser = atom.map(x => ({
   type: 'atom',
   value: x
 }))
-
 const createTreeParser = grammar => {
   let parsers = {
     'atom': [atomParser],
@@ -423,10 +421,42 @@ const createTreeParser = grammar => {
   return parsers[grammar.ParserStart][0]
 }
 
-const createGrammar = grammar => start => {
+/**
+ * Creates an array of ParserRule objects from a grammarString, then packages that array up
+ * in an object with the starting nonterminal of the grammar and returns it.
+ *
+ * @param {String}    grammarString - A string of dot-separated production rules in a modified EBNF form
+ * @param {String}    start         - The non-terminal a parser should start at
+ * @returns {Grammar}               - An object with an array of ParserRules objects and the start
+ */
+const createGrammar = grammarString => start => {
+  /**
+   * A 'production rule' is a string composed of a nonterminal (which must not contain any spaces), followed
+   * by an arrow '->', followed by a production
+   *
+   * A 'production' is a list of symbols on the right hand side of a production rule
+   * Symbols in the same production rule are separated by a space
+   *
+   * (S -> NP VP)
+   * In the production rule above, the production would be [NP, VP]
+   *
+   * A nonterminal can have multiple productions, indicated by separating them with a vertical bar '|'
+   * (S -> NP VP | TP)
+   * In the production rule above, the productions would be [[NP, VP], [TP]]
+   *
+   * Each production rule is separated by a dot
+   * (V -> atom . N -> atom . NP -> N . VP -> V . S -> NP VP | VP)
+   *
+   * 'atom' is the terminal representing any word or sentence which should be treated as one unit
+   *
+   * A grammarString should start with all the production rules which produce a terminal, followed by
+   * the production rules which produce nonterminals we have already defined
+   */
+
   const spaceSeparated = sepBy(str(' '))
   const barSeparated = sepBy(str('| '))
   const dotSeparated = sepBy(str('. '))
+
   const productionParser = barSeparated(spaceSeparated(word))
   const ruleParser = sequenceOf([
     letters,
@@ -439,7 +469,7 @@ const createGrammar = grammar => start => {
     symbols: results[3]
   }))
   const grammarParser = dotSeparated(ruleParser)
-  const grammarRules = grammarParser.run(grammar)
+  const grammarRules = grammarParser.run(grammarString)
 
   return {
     ParserRules: grammarRules.result,
