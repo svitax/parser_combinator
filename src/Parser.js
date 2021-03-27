@@ -120,6 +120,37 @@ const atom = new Parser(parserState => {
   )
 })
 
+// const wordRegex = /^\s*([a-zA-Z0-9]+)/
+const wordRegex = /^\w+/
+const word = new Parser(parserState => {
+  const {
+    targetString,
+    index,
+    isError
+  } = parserState
+
+  if (isError) {
+    return parserState
+  }
+
+  const slicedTarget = targetString.slice(index)
+
+  if (slicedTarget.length === 0) {
+    return updateParserError(parserState, `word: got unexpected end of input.`)
+  }
+
+  const regexMatch = slicedTarget.match(wordRegex)
+
+  if (regexMatch) {
+    return updateParserState(parserState, index+regexMatch[0].length, regexMatch[0])
+  }
+
+  return updateParserError(
+    parserState,
+    `word: Couldn't match word at index ${index}`
+  )
+})
+
 const lettersRegex = /^[A-Za-z]+/;
 const letters = new Parser(parserState => {
   const {
@@ -392,13 +423,37 @@ const createTreeParser = grammar => {
   return parsers[grammar.ParserStart][0]
 }
 
-// TODO: createGrammar function
+const createGrammar = grammar => start => {
+  const spaceSeparated = sepBy(str(' '))
+  const barSeparated = sepBy(str('| '))
+  const dotSeparated = sepBy(str('. '))
+  const productionParser = barSeparated(spaceSeparated(word))
+  const ruleParser = sequenceOf([
+    letters,
+    str(' '),
+    str('-> '),
+    productionParser
+  ])
+  .map(results => ({
+    name: results[0],
+    symbols: results[3]
+  }))
+  const grammarParser = dotSeparated(ruleParser)
+  const grammarRules = grammarParser.run(grammar)
+
+  return {
+    ParserRules: grammarRules.result,
+    ParserStart: start
+  }
+}
 
 module.exports = {
   Parser,
   str,
   letters,
   digits,
+  atom,
+  word,
   sequenceOf,
   choice,
   many,
@@ -408,5 +463,5 @@ module.exports = {
   sepBy1,
   recursive,
   createTreeParser,
-  atomParser,
+  createGrammar
 }
