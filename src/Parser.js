@@ -345,15 +345,9 @@ const createTreeParser = grammar => {
   let parsers = {
     'atom': [atomParser],
   }
-  function createRule (rule) {
-      // const productionParser = p.ParserRules.find(x => Object.keys(x) === rule.symbols)
-      // const productions = p.ParserRules.find(x => Object.keys(x)[0] === rule.symbols[0])
-      let choices = []
-      for (let s of rule.symbols) {
-        let a = queryParsers(s)
-        choices.push(sequenceOf(queryParsers(s)))
-      }
 
+  const createRule = rule => {
+      const choices = getProductionChoices(rule.symbols)
       return betweenSquareBrackets(sequenceOf([
         str(rule.name),
         str(' '),
@@ -364,46 +358,41 @@ const createTreeParser = grammar => {
       }))
   }
 
-  function queryParsers (keys) {
-    let parsersList = []
-    for (let k of keys) {
-      parsersList.push(parsers[k])
+  const getProductionChoices = productions => {
+    let choices = []
+
+    for (let production of productions) {
+      let parsersList = []
+
+      for (let k of production) {
+        parsersList.push(parsers[k])
+      }
+
+      choices.push(sequenceOf(parsersList.flat()))
     }
-    return parsersList.flat()
+    return choices
   }
 
-  function hasValidSymbols (rule) {
+  const hasValidSymbols = rule => {
     for (let sym of rule.symbols) {
       for (let s of sym) {
         if (!parsers[s]) {
           return false
         }
       }
-      // if (!p.ParserRules.find(x => x[sym])) {
-        // return false
-      // }
     }
     return true
   }
 
   for (let r of grammar.ParserRules) {
-    // check that we have a parser for all the symbols in our rule r
-    // if (p.ParserRules.find(x => x[r.symbols]))
     if (hasValidSymbols(r)) {
-      // p.ParserRules.push({[Object.keys(r)[0]]: createRule(r)})
-      // p.ParserRules.push({[r['name']]: createRule(r)})
       parsers[r.name] = [createRule(r)]
     }
   }
-
-  // return parsers[grammar.ParserStart]
-  // const start = p.ParserRules.find(x => Object.keys(x)[0] === grammar.ParserStart)
-  // return start[Object.keys(start)[0]]
-
   return parsers[grammar.ParserStart][0]
 }
 
-// todo: createGrammar function
+// TODO: createGrammar function
 
 module.exports = {
   Parser,
@@ -420,5 +409,4 @@ module.exports = {
   recursive,
   createTreeParser,
   atomParser,
-  digitsParser
 }
