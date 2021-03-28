@@ -1,97 +1,18 @@
 const {
-  Parser,
-  str,
-  letters,
-  digits,
-  sequenceOf,
-  choice,
-  many,
-  many1,
-  between,
-  sepBy,
-  sepBy1,
-  recursive,
+  createGrammar,
   createTreeParser,
-  atomParser,
-  digitsParser
 } = require('./Parser.js')
 
-// parser = ParserState in -> ParserState out
+const grammarString1 = 'N -> atom . V -> atom . VP -> V . NP -> N . S -> NP VP | NP'
+const grammar1 = createGrammar(grammarString1)('S')
+const treeParser1 = createTreeParser(grammar1)
+const result1 = treeParser1.run('[S [NP [N King Robot 4]][VP [V ran]]]')
+console.log(JSON.stringify(result1.result, null, ' '))
 
-const parser = str('hello').map(result => ({
-  value: result.toUpperCase()
-}))
-.errorMap((msg, index) => `Expected a greeting @ index ${index}`)
-
-const digitsLettersDigitsParser = sequenceOf([
-  digits,
-  letters,
-  digits
-])
-
-const choiceParser = choice([
-  digits,
-  letters
-])
-
-const manyChoiceParser = many(choice([
-  digits,
-  letters
-])).map(results => [...results].reverse())
-
-const betweenBrackets = between(str('('), str(')'))
-const betweenParser = betweenBrackets(letters)
-
-const stringParser = letters.map(result => ({
-  type: 'string',
-  value: result
-}))
-const numberParser = digits.map(result => ({
-  type: 'number',
-  value: Number(result)
-}))
-const dicerollParser = sequenceOf([
-  digits,
-  str('d'),
-  digits
-]).map(([n, _, s]) => ({
-  type: 'diceroll',
-  value: [Number(n), Number(s)]
-}))
-
-const chainParser = sequenceOf([letters, str(':')])
-  .map(results => results[0])
-  .chain(type => {
-    if (type === 'string') {
-      return stringParser
-    } else if (type === 'number') {
-      return numberParser
-    }
-    return dicerollParser
-  })
-
-const betweenSquareBrackets = between(str('['), str(']'))
-const commaSeparated = sepBy(str(','))
-
-const value = recursive(() => choice([
-  digits,
-  arrayParser
-]))
-
-const arrayParser = betweenSquareBrackets(commaSeparated(value))
-// const parser = str('hello').map(result => result.toUpperCase())
-
-const grammar = {
-  ParserRules: [
-    // terminals should go first
-    // and working our way up
-    {name: 'N', symbols: [['atom', 'digits'], ['atom']]},
-    {name: 'V', symbols: [['atom']]},
-    {name: 'NP', symbols: [['N', 'V']]},
-  ],
-  ParserStart: 'NP'
-}
-
-const treeParser = createTreeParser(grammar)
-result = treeParser.run('[NP [N ahah][V b]]')
-console.log(JSON.stringify(result, null, ' '))
+const grammarString2 = 'V -> atom . NP -> atom . PP -> atom . Vb -> PP | V NP . VP -> Vb'
+const grammar2 = createGrammar(grammarString2)('VP')
+const treeParser2 = createTreeParser(grammar2)
+let result2 = treeParser2.run('[VP [Vb [PP quickly]]]')
+console.log(JSON.stringify(result2.result, null, ' '))
+result2 = treeParser2.run('[VP [Vb [V killed][NP John]]]')
+console.log(JSON.stringify(result2.result, null, ' '))
