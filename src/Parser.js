@@ -41,7 +41,6 @@ class Parser {
     })
   }
 
-  // letters.chain(result => {})
   chain (fn) {
     return new Parser(parserState => {
       const nextState = this.parserStateTransformerFn(parserState)
@@ -120,7 +119,6 @@ const atom = new Parser(parserState => {
   )
 })
 
-// const wordRegex = /^\s*([a-zA-Z0-9]+)/
 const wordRegex = /^\w+/
 const word = new Parser(parserState => {
   const {
@@ -370,12 +368,35 @@ const atomParser = atom.map(x => ({
   type: 'atom',
   value: x
 }))
+
+/**
+ * Creates a parser that parses a tree according to the production rules in grammar, using
+ * the utility functions from our parser combinator library
+ *
+ * @param    {Grammar} grammar - A Grammar object
+ * @returns  {Parser}          - A Parser object that parses a tree according to the rules in grammar
+ */
 const createTreeParser = grammar => {
+  /**
+   * Each key in the parsers object represents the LHS of a production rule.
+   * The value is a parser for all the possible choices of RHS for a production.
+   */
   let parsers = {
     'atom': [atomParser],
   }
 
+  /**
+   * Creates a parser according to the rule encoded in a ParserRule object
+   *
+   * @param    {ParserRule} rule - A ParserRule object from a Grammar object
+   * @returns  {Parser}          - A parser that parses a string according to the rule encoded in ParserRule
+   */
   const createRule = rule => {
+      /**
+       * Each list in rule.symbols represents a choice of a production
+       * We need to make each list into a parser so we can feed it to our
+       * choice parser
+       */
       const choices = getProductionChoices(rule.symbols)
       return betweenSquareBrackets(sequenceOf([
         str(rule.name),
@@ -389,7 +410,6 @@ const createTreeParser = grammar => {
 
   const getProductionChoices = productions => {
     let choices = []
-
     for (let production of productions) {
       let parsersList = []
 
@@ -413,6 +433,11 @@ const createTreeParser = grammar => {
     return true
   }
 
+  /**
+   * For every rule in a grammar, we check if we have a parser for every symbol in its production
+   *
+   * If so, we create a parser for that rule and add it to our parsers object
+   */
   for (let r of grammar.ParserRules) {
     if (hasValidSymbols(r)) {
       parsers[r.name] = [createRule(r)]
@@ -459,7 +484,7 @@ const createGrammar = grammarString => start => {
 
   const productionParser = barSeparated(spaceSeparated(word))
   const ruleParser = sequenceOf([
-    letters,
+    word,
     str(' '),
     str('-> '),
     productionParser
